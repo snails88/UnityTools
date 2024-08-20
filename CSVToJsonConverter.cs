@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -32,7 +33,7 @@ public class CSVToJsonConverter : EditorWindow
     {
         try
         {
-            List<Dictionary<string, string>> csvData = CSVReader.ReadCSVFile(csvFilePath);
+            List<Dictionary<string, object>> csvData = CSVReader.ReadCSVFile(csvFilePath);
             string jsonData = JsonConvert.SerializeObject(csvData, Formatting.Indented);
             File.WriteAllText(jsonFilePath, jsonData);
             Debug.Log("CSV to JSON conversion completed!");
@@ -44,12 +45,11 @@ public class CSVToJsonConverter : EditorWindow
     }
 }
 
-
 public class CSVReader
 {
-    public static List<Dictionary<string, string>> ReadCSVFile(string filePath)
+    public static List<Dictionary<string, object>> ReadCSVFile(string filePath)
     {
-        var csvData = new List<Dictionary<string, string>>();
+        var csvData = new List<Dictionary<string, object>>();
 
         try
         {
@@ -62,11 +62,11 @@ public class CSVReader
                     var line = reader.ReadLine();
                     var values = line.Split(',');
 
-                    var entry = new Dictionary<string, string>();
+                    var entry = new Dictionary<string, object>();
 
                     for (int i = 0; i < headers.Length; i++)
                     {
-                        entry[headers[i]] = values[i];
+                        entry[headers[i]] = ParseValue(values[i]);
                     }
 
                     csvData.Add(entry);
@@ -80,5 +80,29 @@ public class CSVReader
         }
 
         return csvData;
+    }
+
+    private static object ParseValue(string value)
+    {
+        // Try parsing as bool
+        if (bool.TryParse(value, out bool boolResult))
+        {
+            return boolResult;
+        }
+
+        // Try parsing as integer
+        if (int.TryParse(value, out int intResult))
+        {
+            return intResult;
+        }
+
+        // Try parsing as float
+        if (float.TryParse(value, out float floatResult))
+        {
+            return floatResult;
+        }
+
+        // If all else fails, return as string
+        return value;
     }
 }
