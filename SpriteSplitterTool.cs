@@ -37,16 +37,19 @@ public class SpriteSplitterTool : EditorWindow
 
     private void SplitSprite()
     {
-        int spriteWidth = sourceTexture.width / columns;
-        int spriteHeight = sourceTexture.height / rows;
+        // 원본 텍스처를 읽기 가능한 새 텍스처로 복사
+        Texture2D readableTexture = CopyTexture(sourceTexture);
+
+        int spriteWidth = readableTexture.width / columns;
+        int spriteHeight = readableTexture.height / rows;
 
         for (int y = 0; y < rows; y++)
         {
             for (int x = 0; x < columns; x++)
             {
-                Rect spriteRect = new Rect(x * spriteWidth, sourceTexture.height - (y + 1) * spriteHeight, spriteWidth, spriteHeight);
+                Rect spriteRect = new Rect(x * spriteWidth, readableTexture.height - (y + 1) * spriteHeight, spriteWidth, spriteHeight);
                 Texture2D newTexture = new Texture2D(spriteWidth, spriteHeight);
-                newTexture.SetPixels(sourceTexture.GetPixels((int)spriteRect.x, (int)spriteRect.y, spriteWidth, spriteHeight));
+                newTexture.SetPixels(readableTexture.GetPixels((int)spriteRect.x, (int)spriteRect.y, spriteWidth, spriteHeight));
                 newTexture.Apply();
 
                 byte[] bytes = newTexture.EncodeToPNG();
@@ -60,5 +63,25 @@ public class SpriteSplitterTool : EditorWindow
 
         AssetDatabase.Refresh();
         Debug.Log("Sprite splitting complete!");
+    }
+
+    private Texture2D CopyTexture(Texture2D source)
+    {
+        RenderTexture renderTex = RenderTexture.GetTemporary(
+            source.width,
+            source.height,
+            0,
+            RenderTextureFormat.Default,
+            RenderTextureReadWrite.Linear);
+
+        Graphics.Blit(source, renderTex);
+        RenderTexture previous = RenderTexture.active;
+        RenderTexture.active = renderTex;
+        Texture2D readableText = new Texture2D(source.width, source.height);
+        readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
+        readableText.Apply();
+        RenderTexture.active = previous;
+        RenderTexture.ReleaseTemporary(renderTex);
+        return readableText;
     }
 }
